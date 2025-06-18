@@ -10,7 +10,12 @@
 <body>
     <div class="game-container">
         <header>
-            <h1>Bubble Pop</h1>
+            <div class="title-container">
+                <h1>Bubble Pop</h1>
+                <div class="power-bar">
+                    <div id="powerMeter"></div>
+                </div>
+            </div>
             <div class="controls">
                 <button id="themeToggle"><i class="fas fa-moon"></i></button>
                 <button id="speedControl">Speed: Normal</button>
@@ -36,6 +41,10 @@
             <div class="stat-item">
                 <span><i class="fas fa-trophy"></i> High Score:</span>
                 <span id="highScore">0</span>
+            </div>
+            <div class="stat-item">
+                <span><i class="fas fa-bolt"></i> Power:</span>
+                <span id="powerLevel">0</span>
             </div>
         </div>
 

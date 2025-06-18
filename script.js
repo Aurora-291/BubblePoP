@@ -3,6 +3,7 @@ let count = 0;
 let poppedCount = 0;
 let score = 0;
 let highScore = localStorage.getItem('highScore') || 0;
+let powerLevel = 0;
 let bubbleInterval;
 let gameSpeed = 1000;
 let bubbleSize = 48;
@@ -14,6 +15,8 @@ const countElement = document.getElementById('count');
 const poppedElement = document.getElementById('popped');
 const scoreElement = document.getElementById('score');
 const highScoreElement = document.getElementById('highScore');
+const powerLevelElement = document.getElementById('powerLevel');
+const powerMeter = document.getElementById('powerMeter');
 const themeToggle = document.getElementById('themeToggle');
 const speedControl = document.getElementById('speedControl');
 const sizeControl = document.getElementById('sizeControl');
@@ -143,12 +146,16 @@ function popBubble(bubble) {
     count--;
     poppedCount++;
     score += Math.floor(100 / gameSpeed * bubbleSize);
+    powerLevel += 1;
     
     if (score > highScore) {
         highScore = score;
         localStorage.setItem('highScore', highScore);
         highScoreElement.textContent = highScore;
     }
+    
+    powerLevelElement.textContent = powerLevel;
+    powerMeter.style.width = `${Math.min(powerLevel, 100)}%`;
     
     countElement.textContent = count;
     poppedElement.textContent = poppedCount;

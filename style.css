@@ -6,6 +6,7 @@
     --bubble-color: #1e90ff;
     --header-bg: #e3f2fd;
     --stats-bg: rgba(255, 255, 255, 0.9);
+    --power-color: #ff6b6b;
 }
 
 [data-theme="dark"] {
@@ -16,6 +17,7 @@
     --bubble-color: #4169e1;
     --header-bg: #2c3e50;
     --stats-bg: rgba(0, 0, 0, 0.8);
+    --power-color: #ff4757;
 }
 
 * {
@@ -46,11 +48,32 @@ header {
     z-index: 1000;
 }
 
+.title-container {
+    position: relative;
+    margin-bottom: 1rem;
+}
+
 h1 {
     color: var(--primary-color);
     font-size: 2.5rem;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.power-bar {
+    height: 4px;
+    background-color: rgba(0, 0, 0, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+    margin: 0 auto;
+    max-width: 300px;
+}
+
+#powerMeter {
+    height: 100%;
+    width: 0%;
+    background-color: var(--power-color);
+    transition: width 0.3s ease;
 }
 
 .controls {
