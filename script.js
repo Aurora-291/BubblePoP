@@ -2,7 +2,7 @@ let layer = 0;
 let count = 0;
 let poppedCount = 0;
 let score = 0;
-let highScore = localStorage.getItem('highScore') || 0;
+let highScore = parseInt(sessionStorage.getItem('highScore')) || 0;
 let powerLevel = 0;
 let bubbleInterval;
 let powerupInterval;
@@ -11,6 +11,9 @@ let bubbleSize = 48;
 let isRunning = true;
 let isPaused = false;
 let powerupsEnabled = true;
+let soundEnabled = true;
+
+const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
 const gameArea = document.getElementById('gameArea');
 const countElement = document.getElementById('count');
@@ -25,6 +28,8 @@ const sizeControl = document.getElementById('sizeControl');
 const colorControl = document.getElementById('colorControl');
 const powerupControl = document.getElementById('powerupControl');
 const pauseButton = document.getElementById('pauseButton');
+const soundToggle = document.getElementById('soundToggle');
+
 const speeds = {
     'Slow': 1500,
     'Normal': 1000,
@@ -47,6 +52,36 @@ const bubbleColors = {
     Neon: () => `hsl(${Math.random() * 360}, 100%, 50%)`,
     Mono: () => `hsl(200, 80%, ${40 + Math.random() * 20}%)`
 };
+
+function playSound(frequency, duration = 0.1, type = 'sine') {
+    if (!soundEnabled) return;
+    
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+    oscillator.type = type;
+    
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + duration);
+}
+
+function vibrate(pattern = [50]) {
+    if (navigator.vibrate) {
+        navigator.vibrate(pattern);
+    }
+}
+
+function toggleSound() {
+    soundEnabled = !soundEnabled;
+    soundToggle.innerHTML = soundEnabled ? '<i class="fas fa-volume-up"></i>' : '<i class="fas fa-volume-mute"></i>';
+}
 
 function toggleTheme() {
     document.body.dataset.theme = document.body.dataset.theme === 'dark' ? 'light' : 'dark';
@@ -167,6 +202,9 @@ function popBubble(bubble) {
     bubble.classList.add('popped');
     bubble.innerHTML = '<i class="fas fa-burst"></i>';
     
+    playSound(800 + Math.random() * 400, 0.15, 'triangle');
+    vibrate([30]);
+    
     count--;
     poppedCount++;
     score += Math.floor(100 / gameSpeed * bubbleSize);
@@ -174,7 +212,7 @@ function popBubble(bubble) {
     
     if (score > highScore) {
         highScore = score;
-        localStorage.setItem('highScore', highScore);
+        sessionStorage.setItem('highScore', highScore);
         highScoreElement.textContent = highScore;
     }
     
@@ -216,6 +254,9 @@ function createPowerup() {
 
 function collectPowerup(powerup) {
     powerup.remove();
+    playSound(600, 0.2, 'sawtooth');
+    vibrate([50, 50, 100]);
+    
     powerLevel += 10;
     powerLevelElement.textContent = powerLevel;
     powerMeter.style.width = `${Math.min(powerLevel, 100)}%`;
@@ -229,6 +270,9 @@ function activatePowerMode() {
     powerLevel = 0;
     powerLevelElement.textContent = powerLevel;
     powerMeter.style.width = '0%';
+    
+    playSound(400, 0.5, 'square');
+    vibrate([100, 50, 100, 50, 200]);
     
     const bubbles = document.querySelectorAll('.bubble:not(.powerup)');
     bubbles.forEach(bubble => popBubble(bubble));
@@ -252,6 +296,7 @@ function initGame() {
     colorControl.addEventListener('click', cycleColor);
     powerupControl.addEventListener('click', togglePowerups);
     pauseButton.addEventListener('click', togglePause);
+    soundToggle.addEventListener('click', toggleSound);
     
     window.addEventListener('resize', handleResize);
     
