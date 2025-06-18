@@ -2,6 +2,7 @@ let layer = 0;
 let count = 0;
 let poppedCount = 0;
 let score = 0;
+let highScore = localStorage.getItem('highScore') || 0;
 let bubbleInterval;
 let gameSpeed = 1000;
 let bubbleSize = 48;
@@ -12,6 +13,7 @@ const gameArea = document.getElementById('gameArea');
 const countElement = document.getElementById('count');
 const poppedElement = document.getElementById('popped');
 const scoreElement = document.getElementById('score');
+const highScoreElement = document.getElementById('highScore');
 const themeToggle = document.getElementById('themeToggle');
 const speedControl = document.getElementById('speedControl');
 const sizeControl = document.getElementById('sizeControl');
@@ -67,7 +69,10 @@ function cycleSpeed() {
     speedControl.textContent = `Speed: ${nextSpeed}`;
     gameSpeed = speeds[nextSpeed];
     
-    resetIntervals();
+    clearInterval(bubbleInterval);
+    if (!isPaused) {
+        bubbleInterval = setInterval(createBubble, gameSpeed);
+    }
 }
 
 function cycleSize() {
@@ -88,13 +93,6 @@ function cycleColor() {
     const nextColor = colorModes[nextIndex];
     
     colorControl.textContent = `Color: ${nextColor}`;
-}
-
-function resetIntervals() {
-    clearInterval(bubbleInterval);
-    if (!isPaused) {
-        bubbleInterval = setInterval(createBubble, gameSpeed);
-    }
 }
 
 function getRandomPosition(size) {
@@ -146,6 +144,12 @@ function popBubble(bubble) {
     poppedCount++;
     score += Math.floor(100 / gameSpeed * bubbleSize);
     
+    if (score > highScore) {
+        highScore = score;
+        localStorage.setItem('highScore', highScore);
+        highScoreElement.textContent = highScore;
+    }
+    
     countElement.textContent = count;
     poppedElement.textContent = poppedCount;
     scoreElement.textContent = score;
@@ -153,13 +157,27 @@ function popBubble(bubble) {
     setTimeout(() => bubble.remove(), 300);
 }
 
+function handleResize() {
+    const bubbles = document.querySelectorAll('.bubble');
+    bubbles.forEach(bubble => {
+        const position = getRandomPosition(parseInt(bubble.style.width));
+        bubble.style.left = `${position.x}px`;
+        bubble.style.top = `${position.y}px`;
+    });
+}
+
 function initGame() {
+    highScoreElement.textContent = highScore;
+    
     themeToggle.addEventListener('click', toggleTheme);
     speedControl.addEventListener('click', cycleSpeed);
     sizeControl.addEventListener('click', cycleSize);
     colorControl.addEventListener('click', cycleColor);
     pauseButton.addEventListener('click', togglePause);
-    document.body.dataset.theme = 'light';
+    
+    window.addEventListener('resize', handleResize);
+    
+    bubbleInterval = setInterval(createBubble, gameSpeed);
 }
 
 initGame();
