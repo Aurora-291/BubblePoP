@@ -12,6 +12,10 @@ let isRunning = true;
 let isPaused = false;
 let powerupsEnabled = true;
 let soundEnabled = true;
+let combo = 0;
+let maxCombo = parseInt(sessionStorage.getItem('maxCombo')) || 0;
+let comboTimeout;
+let lastPopTime = 0;
 
 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -29,6 +33,8 @@ const colorControl = document.getElementById('colorControl');
 const powerupControl = document.getElementById('powerupControl');
 const pauseButton = document.getElementById('pauseButton');
 const soundToggle = document.getElementById('soundToggle');
+const comboElement = document.getElementById('combo');
+const maxComboElement = document.getElementById('maxCombo');
 
 const speeds = {
     'Slow': 1500,
@@ -78,6 +84,55 @@ function vibrate(pattern = [50]) {
     }
 }
 
+function updateCombo() {
+    const currentTime = Date.now();
+    
+    if (currentTime - lastPopTime < 2000) {
+        combo++;
+        if (combo > maxCombo) {
+            maxCombo = combo;
+            sessionStorage.setItem('maxCombo', maxCombo);
+            maxComboElement.textContent = maxCombo;
+        }
+    } else {
+        combo = 1;
+    }
+    
+    lastPopTime = currentTime;
+    comboElement.textContent = combo;
+    
+    clearTimeout(comboTimeout);
+    comboTimeout = setTimeout(() => {
+        combo = 0;
+        comboElement.textContent = combo;
+    }, 2000);
+    
+    if (combo >= 5) {
+        playSound(1200 + combo * 50, 0.1, 'sine');
+    }
+}
+
+function getComboMultiplier() {
+    if (combo >= 20) return 5;
+    if (combo >= 15) return 4;
+    if (combo >= 10) return 3;
+    if (combo >= 5) return 2;
+    return 1;
+}
+
+function showComboEffect(x, y) {
+    if (combo < 5) return;
+    
+    const effect = document.createElement('div');
+    effect.className = 'combo-effect';
+    effect.style.left = `${x}px`;
+    effect.style.top = `${y}px`;
+    effect.textContent = `${combo}x COMBO!`;
+    
+    gameArea.appendChild(effect);
+    setTimeout(() => effect.remove(), 1000);
+}
+
 function toggleSound() {
     soundEnabled = !soundEnabled;
     soundToggle.innerHTML = soundEnabled ? '<i class="fas fa-volume-up"></i>' : '<i class="fas fa-volume-mute"></i>';
@@ -95,10 +150,17 @@ function togglePause() {
     if (isPaused) {
         clearInterval(bubbleInterval);
         clearInterval(powerupInterval);
+        clearTimeout(comboTimeout);
     } else {
         bubbleInterval = setInterval(createBubble, gameSpeed);
         if (powerupsEnabled) {
             powerupInterval = setInterval(createPowerup, 5000);
+        }
+        if (combo > 0) {
+            comboTimeout = setTimeout(() => {
+                combo = 0;
+                comboElement.textContent = combo;
+            }, 2000);
         }
     }
 }
@@ -202,12 +264,21 @@ function popBubble(bubble) {
     bubble.classList.add('popped');
     bubble.innerHTML = '<i class="fas fa-burst"></i>';
     
+    const rect = bubble.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+    
+    updateCombo();
+    showComboEffect(x, y);
+    
     playSound(800 + Math.random() * 400, 0.15, 'triangle');
     vibrate([30]);
     
     count--;
     poppedCount++;
-    score += Math.floor(100 / gameSpeed * bubbleSize);
+    const baseScore = Math.floor(100 / gameSpeed * bubbleSize);
+    const multiplier = getComboMultiplier();
+    score += baseScore * multiplier;
     powerLevel += 1;
     
     if (score > highScore) {
@@ -289,6 +360,7 @@ function handleResize() {
 
 function initGame() {
     highScoreElement.textContent = highScore;
+    maxComboElement.textContent = maxCombo;
     
     themeToggle.addEventListener('click', toggleTheme);
     speedControl.addEventListener('click', cycleSpeed);
