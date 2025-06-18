@@ -8,6 +8,16 @@
     --stats-bg: rgba(255, 255, 255, 0.9);
 }
 
+[data-theme="dark"] {
+    --primary-color: #61dafb;
+    --secondary-color: #98fb98;
+    --background-color: #1a1a1a;
+    --text-color: #e0e0e0;
+    --bubble-color: #4169e1;
+    --header-bg: #2c3e50;
+    --stats-bg: rgba(0, 0, 0, 0.8);
+}
+
 * {
     margin: 0;
     padding: 0;
