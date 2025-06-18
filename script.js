@@ -5,10 +5,12 @@ let score = 0;
 let highScore = localStorage.getItem('highScore') || 0;
 let powerLevel = 0;
 let bubbleInterval;
+let powerupInterval;
 let gameSpeed = 1000;
 let bubbleSize = 48;
 let isRunning = true;
 let isPaused = false;
+let powerupsEnabled = true;
 
 const gameArea = document.getElementById('gameArea');
 const countElement = document.getElementById('count');
@@ -21,8 +23,8 @@ const themeToggle = document.getElementById('themeToggle');
 const speedControl = document.getElementById('speedControl');
 const sizeControl = document.getElementById('sizeControl');
 const colorControl = document.getElementById('colorControl');
+const powerupControl = document.getElementById('powerupControl');
 const pauseButton = document.getElementById('pauseButton');
-
 const speeds = {
     'Slow': 1500,
     'Normal': 1000,
@@ -57,8 +59,12 @@ function togglePause() {
     pauseButton.innerHTML = isPaused ? '<i class="fas fa-play"></i>' : '<i class="fas fa-pause"></i>';
     if (isPaused) {
         clearInterval(bubbleInterval);
+        clearInterval(powerupInterval);
     } else {
         bubbleInterval = setInterval(createBubble, gameSpeed);
+        if (powerupsEnabled) {
+            powerupInterval = setInterval(createPowerup, 5000);
+        }
     }
 }
 
@@ -72,9 +78,27 @@ function cycleSpeed() {
     speedControl.textContent = `Speed: ${nextSpeed}`;
     gameSpeed = speeds[nextSpeed];
     
+    resetIntervals();
+}
+
+function togglePowerups() {
+    powerupsEnabled = !powerupsEnabled;
+    powerupControl.textContent = `Powerups: ${powerupsEnabled ? 'On' : 'Off'}`;
+    if (powerupsEnabled) {
+        powerupInterval = setInterval(createPowerup, 5000);
+    } else {
+        clearInterval(powerupInterval);
+    }
+}
+
+function resetIntervals() {
     clearInterval(bubbleInterval);
+    clearInterval(powerupInterval);
     if (!isPaused) {
         bubbleInterval = setInterval(createBubble, gameSpeed);
+        if (powerupsEnabled) {
+            powerupInterval = setInterval(createPowerup, 5000);
+        }
     }
 }
 
@@ -164,6 +188,52 @@ function popBubble(bubble) {
     setTimeout(() => bubble.remove(), 300);
 }
 
+function createPowerup() {
+    if (!isRunning || isPaused || !powerupsEnabled) return;
+    
+    const powerup = document.createElement('div');
+    const position = getRandomPosition(bubbleSize);
+    
+    powerup.className = 'bubble powerup';
+    powerup.style.left = `${position.x}px`;
+    powerup.style.top = `${position.y}px`;
+    powerup.style.width = `${bubbleSize}px`;
+    powerup.style.height = `${bubbleSize}px`;
+    powerup.style.background = `radial-gradient(circle at 30% 30%, gold, transparent 100%)`;
+    powerup.style.zIndex = ++layer;
+    powerup.innerHTML = '<i class="fas fa-bolt"></i>';
+    
+    powerup.addEventListener('click', () => collectPowerup(powerup));
+    
+    gameArea.appendChild(powerup);
+    
+    setTimeout(() => {
+        if (powerup.parentNode) {
+            powerup.remove();
+        }
+    }, 3000);
+}
+
+function collectPowerup(powerup) {
+    powerup.remove();
+    powerLevel += 10;
+    powerLevelElement.textContent = powerLevel;
+    powerMeter.style.width = `${Math.min(powerLevel, 100)}%`;
+    
+    if (powerLevel >= 100) {
+        activatePowerMode();
+    }
+}
+
+function activatePowerMode() {
+    powerLevel = 0;
+    powerLevelElement.textContent = powerLevel;
+    powerMeter.style.width = '0%';
+    
+    const bubbles = document.querySelectorAll('.bubble:not(.powerup)');
+    bubbles.forEach(bubble => popBubble(bubble));
+}
+
 function handleResize() {
     const bubbles = document.querySelectorAll('.bubble');
     bubbles.forEach(bubble => {
@@ -180,11 +250,13 @@ function initGame() {
     speedControl.addEventListener('click', cycleSpeed);
     sizeControl.addEventListener('click', cycleSize);
     colorControl.addEventListener('click', cycleColor);
+    powerupControl.addEventListener('click', togglePowerups);
     pauseButton.addEventListener('click', togglePause);
     
     window.addEventListener('resize', handleResize);
     
     bubbleInterval = setInterval(createBubble, gameSpeed);
+    powerupInterval = setInterval(createPowerup, 5000);
 }
 
 initGame();
