@@ -28,6 +28,7 @@ const powerupControl = document.getElementById('powerupControl');
 const pauseButton = document.getElementById('pauseButton');
 const achievementPopup = document.getElementById('achievementPopup');
 const achievementText = document.getElementById('achievementText');
+
 const speeds = {
     'Slow': 1500,
     'Normal': 1000,
@@ -84,6 +85,26 @@ function cycleSpeed() {
     resetIntervals();
 }
 
+function cycleSize() {
+    const currentSize = sizeControl.textContent.split(': ')[1];
+    const sizeKeys = Object.keys(sizes);
+    const currentIndex = sizeKeys.indexOf(currentSize);
+    const nextIndex = (currentIndex + 1) % sizeKeys.length;
+    const nextSize = sizeKeys[nextIndex];
+    
+    sizeControl.textContent = `Size: ${nextSize}`;
+    bubbleSize = sizes[nextSize];
+}
+
+function cycleColor() {
+    const currentColor = colorControl.textContent.split(': ')[1];
+    const currentIndex = colorModes.indexOf(currentColor);
+    const nextIndex = (currentIndex + 1) % colorModes.length;
+    const nextColor = colorModes[nextIndex];
+    
+    colorControl.textContent = `Color: ${nextColor}`;
+}
+
 function togglePowerups() {
     powerupsEnabled = !powerupsEnabled;
     powerupControl.textContent = `Powerups: ${powerupsEnabled ? 'On' : 'Off'}`;
@@ -103,26 +124,6 @@ function resetIntervals() {
             powerupInterval = setInterval(createPowerup, 5000);
         }
     }
-}
-
-function cycleSize() {
-    const currentSize = sizeControl.textContent.split(': ')[1];
-    const sizeKeys = Object.keys(sizes);
-    const currentIndex = sizeKeys.indexOf(currentSize);
-    const nextIndex = (currentIndex + 1) % sizeKeys.length;
-    const nextSize = sizeKeys[nextIndex];
-    
-    sizeControl.textContent = `Size: ${nextSize}`;
-    bubbleSize = sizes[nextSize];
-}
-
-function cycleColor() {
-    const currentColor = colorControl.textContent.split(': ')[1];
-    const currentIndex = colorModes.indexOf(currentColor);
-    const nextIndex = (currentIndex + 1) % colorModes.length;
-    const nextColor = colorModes[nextIndex];
-    
-    colorControl.textContent = `Color: ${nextColor}`;
 }
 
 function getRandomPosition(size) {
@@ -162,39 +163,6 @@ function createBubble() {
             countElement.textContent = count;
         }
     }, 10000);
-}
-
-function popBubble(bubble) {
-    if (bubble.classList.contains('popped')) return;
-    
-    bubble.classList.add('popped');
-    bubble.innerHTML = '<i class="fas fa-burst"></i>';
-    
-    count--;
-    poppedCount++;
-    score += Math.floor(100 / gameSpeed * bubbleSize);
-    powerLevel += 1;
-    
-    if (score > highScore) {
-        highScore = score;
-        localStorage.setItem('highScore', highScore);
-        highScoreElement.textContent = highScore;
-        showAchievement('New High Score!');
-    }
-    
-    if (score >= nextPowerupScore) {
-        showAchievement(`Score Milestone: ${nextPowerupScore}`);
-        nextPowerupScore += 1000;
-    }
-    
-    powerLevelElement.textContent = powerLevel;
-    powerMeter.style.width = `${Math.min(powerLevel, 100)}%`;
-    
-    countElement.textContent = count;
-    poppedElement.textContent = poppedCount;
-    scoreElement.textContent = score;
-    
-    setTimeout(() => bubble.remove(), 300);
 }
 
 function createPowerup() {
@@ -247,6 +215,44 @@ function activatePowerMode() {
     showAchievement('POWER MODE ACTIVATED!');
 }
 
+function popBubble(bubble) {
+    if (bubble.classList.contains('popped')) return;
+    
+    bubble.classList.add('popped');
+    bubble.innerHTML = '<i class="fas fa-burst"></i>';
+    
+    count--;
+    poppedCount++;
+    score += Math.floor(100 / gameSpeed * bubbleSize);
+    
+    if (score > highScore) {
+        highScore = score;
+        localStorage.setItem('highScore', highScore);
+        highScoreElement.textContent = highScore;
+        showAchievement('New High Score!');
+    }
+    
+    if (score >= nextPowerupScore) {
+        showAchievement(`Score Milestone: ${nextPowerupScore}`);
+        nextPowerupScore += 1000;
+    }
+    
+    countElement.textContent = count;
+    poppedElement.textContent = poppedCount;
+    scoreElement.textContent = score;
+    
+    setTimeout(() => bubble.remove(), 300);
+}
+
+function showAchievement(text) {
+    achievementText.textContent = text;
+    achievementPopup.classList.add('show');
+    
+    setTimeout(() => {
+        achievementPopup.classList.remove('show');
+    }, 2000);
+}
+
 function handleResize() {
     const bubbles = document.querySelectorAll('.bubble');
     bubbles.forEach(bubble => {
@@ -270,15 +276,6 @@ function initGame() {
     
     bubbleInterval = setInterval(createBubble, gameSpeed);
     powerupInterval = setInterval(createPowerup, 5000);
-}
-
-function showAchievement(text) {
-    achievementText.textContent = text;
-    achievementPopup.classList.add('show');
-    
-    setTimeout(() => {
-        achievementPopup.classList.remove('show');
-    }, 2000);
 }
 
 initGame();
