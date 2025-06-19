@@ -7,6 +7,7 @@
     --header-bg: #e3f2fd;
     --stats-bg: rgba(255, 255, 255, 0.9);
     --power-color: #ff6b6b;
+    --achievement-bg: rgba(50, 50, 50, 0.9);
 }
 
 [data-theme="dark"] {
@@ -18,6 +19,7 @@
     --header-bg: #2c3e50;
     --stats-bg: rgba(0, 0, 0, 0.8);
     --power-color: #ff4757;
+    --achievement-bg: rgba(200, 200, 200, 0.9);
 }
 
 * {
@@ -211,4 +213,35 @@ button:hover {
     h1 {
         font-size: 1.8rem;
     }
+    
+    .achievement-popup {
+        width: 90%;
+        padding: 0.8rem 1.5rem;
+    }
+}
+
+.achievement-popup {
+    position: fixed;
+    bottom: -100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--achievement-bg);
+    color: white;
+    padding: 1rem 2rem;
+    border-radius: 25px;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    z-index: 2000;
+    transition: bottom 0.5s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.achievement-popup.show {
+    bottom: 20px;
+}
+
+.achievement-popup i {
+    color: gold;
+    font-size: 1.5rem;
 }

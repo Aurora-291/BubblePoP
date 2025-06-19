@@ -2,7 +2,7 @@ let layer = 0;
 let count = 0;
 let poppedCount = 0;
 let score = 0;
-let highScore = parseInt(sessionStorage.getItem('highScore')) || 0;
+let highScore = localStorage.getItem('highScore') || 0;
 let powerLevel = 0;
 let bubbleInterval;
 let powerupInterval;
@@ -11,13 +11,7 @@ let bubbleSize = 48;
 let isRunning = true;
 let isPaused = false;
 let powerupsEnabled = true;
-let soundEnabled = true;
-let combo = 0;
-let maxCombo = parseInt(sessionStorage.getItem('maxCombo')) || 0;
-let comboTimeout;
-let lastPopTime = 0;
-
-const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+let nextPowerupScore = 1000;
 
 const gameArea = document.getElementById('gameArea');
 const countElement = document.getElementById('count');
@@ -32,10 +26,8 @@ const sizeControl = document.getElementById('sizeControl');
 const colorControl = document.getElementById('colorControl');
 const powerupControl = document.getElementById('powerupControl');
 const pauseButton = document.getElementById('pauseButton');
-const soundToggle = document.getElementById('soundToggle');
-const comboElement = document.getElementById('combo');
-const maxComboElement = document.getElementById('maxCombo');
-
+const achievementPopup = document.getElementById('achievementPopup');
+const achievementText = document.getElementById('achievementText');
 const speeds = {
     'Slow': 1500,
     'Normal': 1000,
@@ -59,85 +51,6 @@ const bubbleColors = {
     Mono: () => `hsl(200, 80%, ${40 + Math.random() * 20}%)`
 };
 
-function playSound(frequency, duration = 0.1, type = 'sine') {
-    if (!soundEnabled) return;
-    
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-    
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    
-    oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
-    oscillator.type = type;
-    
-    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
-    
-    oscillator.start(audioContext.currentTime);
-    oscillator.stop(audioContext.currentTime + duration);
-}
-
-function vibrate(pattern = [50]) {
-    if (navigator.vibrate) {
-        navigator.vibrate(pattern);
-    }
-}
-
-function updateCombo() {
-    const currentTime = Date.now();
-    
-    if (currentTime - lastPopTime < 2000) {
-        combo++;
-        if (combo > maxCombo) {
-            maxCombo = combo;
-            sessionStorage.setItem('maxCombo', maxCombo);
-            maxComboElement.textContent = maxCombo;
-        }
-    } else {
-        combo = 1;
-    }
-    
-    lastPopTime = currentTime;
-    comboElement.textContent = combo;
-    
-    clearTimeout(comboTimeout);
-    comboTimeout = setTimeout(() => {
-        combo = 0;
-        comboElement.textContent = combo;
-    }, 2000);
-    
-    if (combo >= 5) {
-        playSound(1200 + combo * 50, 0.1, 'sine');
-    }
-}
-
-function getComboMultiplier() {
-    if (combo >= 20) return 5;
-    if (combo >= 15) return 4;
-    if (combo >= 10) return 3;
-    if (combo >= 5) return 2;
-    return 1;
-}
-
-function showComboEffect(x, y) {
-    if (combo < 5) return;
-    
-    const effect = document.createElement('div');
-    effect.className = 'combo-effect';
-    effect.style.left = `${x}px`;
-    effect.style.top = `${y}px`;
-    effect.textContent = `${combo}x COMBO!`;
-    
-    gameArea.appendChild(effect);
-    setTimeout(() => effect.remove(), 1000);
-}
-
-function toggleSound() {
-    soundEnabled = !soundEnabled;
-    soundToggle.innerHTML = soundEnabled ? '<i class="fas fa-volume-up"></i>' : '<i class="fas fa-volume-mute"></i>';
-}
-
 function toggleTheme() {
     document.body.dataset.theme = document.body.dataset.theme === 'dark' ? 'light' : 'dark';
     themeToggle.innerHTML = document.body.dataset.theme === 'dark' ? 
@@ -150,17 +63,10 @@ function togglePause() {
     if (isPaused) {
         clearInterval(bubbleInterval);
         clearInterval(powerupInterval);
-        clearTimeout(comboTimeout);
     } else {
         bubbleInterval = setInterval(createBubble, gameSpeed);
         if (powerupsEnabled) {
             powerupInterval = setInterval(createPowerup, 5000);
-        }
-        if (combo > 0) {
-            comboTimeout = setTimeout(() => {
-                combo = 0;
-                comboElement.textContent = combo;
-            }, 2000);
         }
     }
 }
@@ -264,27 +170,21 @@ function popBubble(bubble) {
     bubble.classList.add('popped');
     bubble.innerHTML = '<i class="fas fa-burst"></i>';
     
-    const rect = bubble.getBoundingClientRect();
-    const x = rect.left + rect.width / 2;
-    const y = rect.top + rect.height / 2;
-    
-    updateCombo();
-    showComboEffect(x, y);
-    
-    playSound(800 + Math.random() * 400, 0.15, 'triangle');
-    vibrate([30]);
-    
     count--;
     poppedCount++;
-    const baseScore = Math.floor(100 / gameSpeed * bubbleSize);
-    const multiplier = getComboMultiplier();
-    score += baseScore * multiplier;
+    score += Math.floor(100 / gameSpeed * bubbleSize);
     powerLevel += 1;
     
     if (score > highScore) {
         highScore = score;
-        sessionStorage.setItem('highScore', highScore);
+        localStorage.setItem('highScore', highScore);
         highScoreElement.textContent = highScore;
+        showAchievement('New High Score!');
+    }
+    
+    if (score >= nextPowerupScore) {
+        showAchievement(`Score Milestone: ${nextPowerupScore}`);
+        nextPowerupScore += 1000;
     }
     
     powerLevelElement.textContent = powerLevel;
@@ -325,9 +225,6 @@ function createPowerup() {
 
 function collectPowerup(powerup) {
     powerup.remove();
-    playSound(600, 0.2, 'sawtooth');
-    vibrate([50, 50, 100]);
-    
     powerLevel += 10;
     powerLevelElement.textContent = powerLevel;
     powerMeter.style.width = `${Math.min(powerLevel, 100)}%`;
@@ -335,6 +232,8 @@ function collectPowerup(powerup) {
     if (powerLevel >= 100) {
         activatePowerMode();
     }
+    
+    showAchievement('Power Up! +10 Power');
 }
 
 function activatePowerMode() {
@@ -342,11 +241,10 @@ function activatePowerMode() {
     powerLevelElement.textContent = powerLevel;
     powerMeter.style.width = '0%';
     
-    playSound(400, 0.5, 'square');
-    vibrate([100, 50, 100, 50, 200]);
-    
     const bubbles = document.querySelectorAll('.bubble:not(.powerup)');
     bubbles.forEach(bubble => popBubble(bubble));
+    
+    showAchievement('POWER MODE ACTIVATED!');
 }
 
 function handleResize() {
@@ -360,7 +258,6 @@ function handleResize() {
 
 function initGame() {
     highScoreElement.textContent = highScore;
-    maxComboElement.textContent = maxCombo;
     
     themeToggle.addEventListener('click', toggleTheme);
     speedControl.addEventListener('click', cycleSpeed);
@@ -368,12 +265,20 @@ function initGame() {
     colorControl.addEventListener('click', cycleColor);
     powerupControl.addEventListener('click', togglePowerups);
     pauseButton.addEventListener('click', togglePause);
-    soundToggle.addEventListener('click', toggleSound);
     
     window.addEventListener('resize', handleResize);
     
     bubbleInterval = setInterval(createBubble, gameSpeed);
     powerupInterval = setInterval(createPowerup, 5000);
+}
+
+function showAchievement(text) {
+    achievementText.textContent = text;
+    achievementPopup.classList.add('show');
+    
+    setTimeout(() => {
+        achievementPopup.classList.remove('show');
+    }, 2000);
 }
 
 initGame();
